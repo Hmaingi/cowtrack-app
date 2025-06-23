@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CowTrack | Cows</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 flex">
+
+  <!-- Sidebar -->
+  <aside class="bg-white w-64 min-h-screen p-6 shadow-lg fixed md:relative z-40">
+    <div class="text-2xl font-bold mb-8">CowTrack</div>
+    <nav class="space-y-4">
+      <a href="dashboard.html" class="block text-gray-700 hover:text-blue-600">Dashboard</a>
+      <a href="cows.html" class="block text-blue-600 font-semibold">Cows</a>
+      <a href="#" class="block text-gray-700 hover:text-blue-600">Insights</a>
+      <a href="#" class="block text-gray-700 hover:text-blue-600">Settings</a>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 ml-0 md:ml-64">
+    
+    <!-- Top Bar -->
+    <header class="bg-white p-4 shadow-md flex items-center justify-between md:justify-end">
+      <div class="flex items-center gap-4 w-full md:w-auto">
+        <span class="text-sm text-gray-800 font-medium">Manage Your Herd</span>
+      </div>
+    </header>
+
+    <!-- Main Cows Content -->
+    <main class="p-6 md:p-10">
+      <div class="bg-white rounded-2xl shadow-lg p-6 space-y-8 mr-4">
+
+        <!-- Header + Add Button -->
+        <div class="flex justify-between items-center">
+          <h2 class="text-2xl font-bold">Cows</h2>
+          <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            ➕ Add New Cow
+          </button>
+        </div>
+
+        <!-- Cow Cards Grid -->
+        <div class="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <!-- Example Cow Card -->
+          <div class="bg-gray-50 rounded-xl shadow-md p-4 space-y-2">
+            <h3 class="text-lg font-semibold">Cow #001</h3>
+            <p><span class="font-medium">Name:</span> Bella</p>
+            <p><span class="font-medium">Age:</span> 4</p>
+            <p><span class="font-medium">Breed:</span> Friesian</p>
+            <p><span class="font-medium">Herd:</span> Herd A</p>
+            <p><span class="font-medium">Stable:</span> Shelter 1</p>
+            <div class="flex justify-end gap-2 mt-2">
+              <button class="text-blue-600 text-sm" onclick="editCow()">Edit</button>
+              <button class="text-red-600 text-sm" onclick="deleteCow()">Delete</button>
+            </div>
+          </div>
+          <!-- Add more cow cards here -->
+        </div>
+
+        <!-- Herd Management Placeholder -->
+        <div class="mt-10">
+          <h3 class="text-xl font-semibold mb-2">Manage Herds</h3>
+          <p class="text-sm text-gray-600">Feature coming soon: Group, move or rename cows in herds or stables.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add/Edit Cow Modal -->
+  <div id="cowModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg w-full max-w-md p-6">
+      <h3 class="text-xl font-semibold mb-4">Add New Cow</h3>
+      <form id="cowForm" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium">Name</label>
+          <input type="text" name="name" class="w-full border border-gray-300 rounded p-2" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Age</label>
+          <input type="number" name="age" class="w-full border border-gray-300 rounded p-2" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Breed</label>
+          <input type="text" name="breed" class="w-full border border-gray-300 rounded p-2" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Herd</label>
+          <select name="herd" class="w-full border border-gray-300 rounded p-2">
+            <option>Herd A</option>
+            <option>Herd B</option>
+            <option>New Herd</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Stable</label>
+          <select name="stable" class="w-full border border-gray-300 rounded p-2">
+            <option>Shelter 1</option>
+            <option>Pasture 2</option>
+            <option>Sick Bay</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <button type="button" onclick="closeModal()" class="text-gray-600">Cancel</button>
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    function openModal() {
+      document.getElementById("cowModal").classList.remove("hidden");
+    }
+
+    function closeModal() {
+      document.getElementById("cowModal").classList.add("hidden");
+    }
+
+    function editCow() {
+      // Populate form with cow data (you'll later connect to your data)
+      openModal();
+    }
+
+    function deleteCow() {
+      if (confirm("Are you sure you want to delete this cow?")) {
+        alert("Cow deleted (placeholder action)");
+      }
+    }
+
+    document.getElementById("cowForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+      closeModal();
+      alert("Cow saved (placeholder)");
+    });
+  </script>
+
+</body>
+</html>
