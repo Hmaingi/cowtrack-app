@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CowTrack | Insights</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 flex">
+
+  <!-- Sidebar -->
+  <aside class="bg-white w-64 min-h-screen p-6 shadow-lg fixed md:relative z-40">
+    <div class="text-2xl font-bold mb-8">CowTrack</div>
+    <nav class="space-y-4">
+      <a href="dashboard.html" class="block text-gray-700 hover:text-blue-600">Dashboard</a>
+      <a href="cows.html"      class="block text-gray-700 hover:text-blue-600">Cows</a>
+      <a href="insights.html"  class="block text-blue-600 font-semibold">Insights</a>
+      <a href="settings.html"  class="block text-gray-700 hover:text-blue-600">Settings</a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+   <div class="bg-white rounded-2xl shadow-xl p-6 md:p-10 space-y-10 mr-4">
+
+
+    <!-- Top bar -->
+    <header class="bg-white p-4 shadow-md">
+      <h1 class="text-lg font-semibold">Herd Insights – last 7 days</h1>
+    </header>
+
+    <!-- Content -->
+    <main class="p-6 md:p-10 space-y-10">
+
+      <!-- Avg Temp -->
+      <section class="bg-white rounded-2xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Average Temperature per Herd</h2>
+        <div class="w-full h-72"><canvas id="avgTempChart" class="w-full h-full"></canvas></div>
+      </section>
+
+      <!-- Alerts -->
+      <section class="bg-white rounded-2xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Alerts (Temp &gt; 39 °C or SpO₂ &lt; 92 %)</h2>
+        <div class="w-full h-64"><canvas id="alertChart" class="w-full h-full"></canvas></div>
+      </section>
+
+      <!-- Avg Steps -->
+      <section class="bg-white rounded-2xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Average Steps per Herd</h2>
+        <div class="w-full h-72"><canvas id="stepsChart" class="w-full h-full"></canvas></div>
+      </section>
+      <!-- Avg Chewing -->
+<section class="bg-white rounded-2xl shadow-lg p-6">
+  <h2 class="text-xl font-semibold mb-4">Average Chewing Minutes per Herd</h2>
+  <div class="w-full h-72"><canvas id="chewChart" class="w-full h-full"></canvas></div>
+</section>
+<!-- Radar Herd Comparison -->
+<section class="bg-white rounded-2xl shadow-lg p-6">
+  <h2 class="text-xl font-semibold mb-4">Herd Comparison Radar</h2>
+  <div class="w-full h-96"><canvas id="herdRadar" class="w-full h-full"></canvas></div>
+</section>
+
+<!-- Scatter Temp vs Steps -->
+<section class="bg-white rounded-2xl shadow-lg p-6">
+  <h2 class="text-xl font-semibold mb-4">Temp vs Steps (today)</h2>
+  <div class="w-full h-80"><canvas id="scatterTS" class="w-full h-full"></canvas></div>
+</section>
+
+<!-- Chew/Temp correlation table -->
+<section class="bg-white rounded-2xl shadow-lg p-6">
+  <h2 class="text-xl font-semibold mb-4">Low-Chew but Normal-Temp Cows (today)</h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead><tr class="border-b">
+        <th class="px-3 py-2 text-left">Cow</th>
+        <th class="px-3 py-2 text-left">Herd</th>
+        <th class="px-3 py-2 text-left">Temp (°C)</th>
+        <th class="px-3 py-2 text-left">Chew min</th>
+      </tr></thead>
+      <tbody id="corrTable"></tbody>
+    </table>
+  </div>
+</section>
+
+
+
+      <!-- Bottom-5 activity table -->
+      <section class="bg-white rounded-2xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Least-Active Cows Today</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead><tr class="border-b">
+              <th class="px-3 py-2 text-left">Cow</th>
+              <th class="px-3 py-2 text-left">Herd</th>
+              <th class="px-3 py-2 text-left">Steps (today)</th>
+            </tr></thead>
+            <tbody id="lowStepsTbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ---------- JavaScript ---------- -->
+  <script>
+  /* pull cows from localStorage */
+  const cows = JSON.parse(localStorage.getItem("cowtrack_cows")) || [];
+
+  /* -------- ensure every history record has steps & chew -------- */
+  function addDemoMetrics(r){
+    if(r.steps === undefined) r.steps = 4000 + Math.floor(Math.random()*3000);
+    if(r.chew  === undefined) r.chew  = 250  + Math.floor(Math.random()*100);
+  }
+  cows.forEach(c=>{
+    if(!Array.isArray(c.history) || !c.history.length){
+      // cow created before we stored history at all
+      c.history = Array.from({length:7},(_,i)=>{
+        const d = new Date(Date.now() - (6-i)*864e5)
+                  .toISOString().slice(0,10);
+        const rec = { date:d,
+          temp: +(38 + Math.random()).toFixed(1),
+          hr  :  60 + Math.floor(Math.random()*20),
+          spo2:  94 + Math.floor(Math.random()*4)
+        };
+        addDemoMetrics(rec);
+        return rec;
+      });
+    } else {
+      c.history.forEach(addDemoMetrics);
+    }
+  });
+  /* save back once so every page sees the fixed data */
+  localStorage.setItem("cowtrack_cows", JSON.stringify(cows));
+
+  
+  
+
+    /* helper: get last 7 dates yyyy-mm-dd */
+    const dates7 = Array.from({length:7},(_,i)=>{
+      return new Date(Date.now() - (6-i)*864e5).toISOString().slice(0,10);
+    });
+
+    /* gather herds list */
+    const herds = [...new Set(cows.map(c=>c.herd))];
+
+    /* ---------- Avg Temp per Herd -------- */
+    const dsTemp = herds.map(h=>{
+      const daily = dates7.map(d=>{
+        const vals = cows.filter(c=>c.herd===h)
+                         .map(c=>c.history?.find(r=>r.date===d)?.temp)
+                         .filter(v=>v!==undefined)
+                         .map(Number);
+        return vals.length ? +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : null;
+      });
+      return { label:h, data:daily, tension:0.3 };
+    });
+
+    new Chart(avgTempChart.getContext("2d"),{
+      type:"line",
+      data:{ labels:dates7, datasets:dsTemp },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:"bottom"} },
+        scales:{ y:{ title:{display:true,text:"°C"} } }
+      }
+    });
+
+    /* ---------- Alerts per day ---------- */
+    const alerts = dates7.map(d=>{
+      let count=0;
+      cows.forEach(c=>{
+        const r=c.history?.find(h=>h.date===d);
+        if(r && (r.temp>39 || r.spo2<92)) count++;
+      });
+      return count;
+    });
+
+    new Chart(alertChart.getContext("2d"),{
+      type:"bar",
+      data:{ labels:dates7, datasets:[{label:"Alerts",data:alerts,backgroundColor:"#f87171"}]},
+      options:{ responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}} }
+    });
+
+    /* ---------- Avg Steps per Herd ---------- */
+    const dsSteps = herds.map(h=>{
+      const daily = dates7.map(d=>{
+        const vals = cows.filter(c=>c.herd===h)
+                         .map(c=>c.history?.find(r=>r.date===d)?.steps)
+                         .filter(v=>v!==undefined)
+                         .map(Number);
+        return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+      });
+      return { label:h, data:daily, tension:0.3 };
+    });
+
+    new Chart(stepsChart.getContext("2d"),{
+      type:"line",
+      data:{ labels:dates7, datasets:dsSteps },
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{position:"bottom"} },
+        scales:{ y:{ title:{display:true,text:"Steps"} } }
+      }
+    });
+  /* ---------- Avg Chew per Herd ---------- */
+const dsChew = herds.map(h=>{
+  const daily = dates7.map(d=>{
+    const vals = cows.filter(c=>c.herd===h)
+                     .map(c=>c.history?.find(r=>r.date===d)?.chew)
+                     .filter(v=>v!==undefined)
+                     .map(Number);
+    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+  });
+  return { label:h, data:daily, tension:0.3 };
+});
+
+new Chart(chewChart.getContext("2d"),{
+  type:"line",
+  data:{ labels:dates7, datasets:dsChew },
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{position:"bottom"} },
+    scales:{ y:{ title:{display:true,text:"Minutes"} } }
+  }
+});
+/* ---------- Radar: herd comparison (avg of all metrics) ---------- */
+function avg(arr, key){ return arr.length ? arr.reduce((a,b)=>a+b[key],0)/arr.length : 0; }
+
+const radarDS = {
+  labels: ["Temp °C", "HR bpm", "Steps", "Chew min", "Alert %"],
+  datasets: herds.map(h=>{
+    const herdCows = cows.filter(c=>c.herd===h);
+    /* today’s index in history is 6 (last element) */
+    const todayData = herdCows.map(c=>c.history?.[6]).filter(Boolean);
+    const alerts    = todayData.filter(r=>r.temp>39 || r.spo2<92).length;
+    return {
+      label: h,
+      data: [
+        +(avg(todayData,"temp").toFixed(2)),
+        +(avg(todayData,"hr"  ).toFixed(0)),
+        +(avg(todayData,"steps").toFixed(0)),
+        +(avg(todayData,"chew" ).toFixed(0)),
+        +(alerts / (todayData.length||1) * 100).toFixed(1)  // %
+      ],
+      fill: true
+    };
+  })
+};
+
+new Chart(herdRadar.getContext("2d"),{
+  type:"radar",
+  data: radarDS,
+  options:{ responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{position:"bottom"} },
+    scales:{ r:{ angleLines:{display:false}, suggestedMin:0 } }
+  }
+});
+/* ---------- Scatter: Temp vs Steps (each cow today) ---------- */
+const scatterData = cows.map(c=>{
+  const r = c.history?.[6];
+  return r ? { x:r.temp, y:r.steps, label:c.name } : null;
+}).filter(Boolean);
+
+new Chart(scatterTS.getContext("2d"),{
+  type:"scatter",
+  data:{
+    datasets:[{
+      label:"Cows",
+      data:scatterData,
+      pointBackgroundColor:"#3b82f6"
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      tooltip:{ callbacks:{
+        label:ctx=>`${ctx.raw.label}: ${ctx.raw.x}°C, ${ctx.raw.y} steps`
+      }},
+      legend:{display:false}
+    },
+    scales:{
+      x:{ title:{display:true,text:"Temp °C"} },
+      y:{ title:{display:true,text:"Steps"} }
+    }
+  }
+});
+/* ---------- correlation table: low chew but normal temp ---------- */
+const lowChew = cows.map(c=>{
+  const r = c.history?.[6];
+  return r ? { name:c.name, herd:c.herd, temp:r.temp, chew:r.chew } : null;
+}).filter(c => c && c.temp < 39 && c.chew < 250)   // normal temp, low chew
+  .sort((a,b)=>a.chew - b.chew)
+  .slice(0,10);
+
+corrTable.innerHTML = lowChew.length ? lowChew.map(c=>`
+  <tr class="border-b">
+    <td class="px-3 py-2">${c.name}</td>
+    <td class="px-3 py-2">${c.herd}</td>
+    <td class="px-3 py-2">${c.temp}</td>
+    <td class="px-3 py-2">${c.chew}</td>
+  </tr>`).join("")
+: `<tr><td class="px-3 py-2" colspan="4">No cows match criteria today.</td></tr>`;
+
+
+    /* ---------- Bottom-5 least-active today ---------- */
+    const today = dates7[6];
+    const sorted = cows.map(c=>{
+      const rec = c.history?.find(r=>r.date===today);
+      return { name:c.name, herd:c.herd, steps:rec?.steps ?? 0 };
+    }).sort((a,b)=>a.steps-b.steps).slice(0,5);
+
+    lowStepsTbody.innerHTML = sorted.map(c=>`
+      <tr class="border-b">
+        <td class="px-3 py-2">${c.name}</td>
+        <td class="px-3 py-2">${c.herd}</td>
+        <td class="px-3 py-2">${c.steps}</td>
+      </tr>`).join("");
+  </script>
+</body>
+</html>
